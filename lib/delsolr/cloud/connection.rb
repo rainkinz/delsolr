@@ -22,11 +22,8 @@ module DelSolr
           node = @zk_info.node_for_collection(opts.fetch(:collection))
           url = File.join(node, method)
 
-          # query_path = File.join(@path, opts.fetch(:collection), method)
-
+          # TODO: Not that familiar with faraday. Is this the best idea?
           Faraday.post(url, params, opts)
-
-          # faraday.post(query_path, params, opts)
         rescue Faraday::ClientError => e
           raise Client::ConnectionError, e.message
         end
@@ -47,20 +44,6 @@ module DelSolr
         response
       end
 
-      def full_path
-        "#{self.server}:#{self.port}#{self.path}"
-      end
-
-      def faraday
-        @faraday ||= Faraday.new(:url => "http://#{@server}:#{@port}",
-                                &connection_block)
-      end
-
-      def connection_block
-        @connection_block ||= lambda do |faraday|
-          faraday.adapter Faraday.default_adapter
-        end
-      end
     end
   end
 
