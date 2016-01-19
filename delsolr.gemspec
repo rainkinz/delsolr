@@ -12,9 +12,10 @@ Gem::Specification.new do |s|
   s.files = Dir["{app,config,db,lib}/**/*"] + ["License.txt", "Rakefile", "README.rdoc"]
   s.test_files = Dir.glob('test/*_test.rb')
 
-  s.add_dependency("faraday", ["~> 0.8.8"])
+  s.add_dependency "faraday", "~> 0.9.2"
   s.add_dependency("json")
 
+  s.add_development_dependency "pry"
   s.add_development_dependency "rspec", "~> 3.4.0"
   s.add_development_dependency "webmock"
   s.add_development_dependency("mocha", [">= 0.9.0"])

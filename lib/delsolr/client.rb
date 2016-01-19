@@ -5,7 +5,7 @@ module DelSolr
     autoload :QueryBuilder, "delsolr/client/query_builder"
     autoload :Response, "delsolr/client/response"
 
-    attr_reader :configuration, :logger
+    attr_reader :connection, :logger
 
     class ConnectionError < StandardError; end
 
@@ -28,11 +28,10 @@ module DelSolr
     # [<b><tt>:logger</tt></b>]
     #   (optional) Log4r logger object
     def initialize(options = {}, &connection_block)
-      @configuration = DelSolr::Client::Configuration.new(options[:server], options[:port], options[:timeout], options[:path])
+      @connection = options.fetch(:connection) { default_connection(options, &connection_block) }
       @cache = options[:cache]
       @logger = options[:logger]
       @shortcuts = options[:shortcuts]
-      setup_connection(&connection_block) if connection_block
     end
 
     #
@@ -152,24 +151,26 @@ module DelSolr
       end
 
       if body.blank? # cache miss (or wasn't enabled)
-        response = begin
-          connection.post("#{configuration.path}/select", query_builder.request_string)
-        rescue Faraday::ClientError => e
-          raise ConnectionError, e.message
-        end
+        @connection.post("/select", query_builder.request_string)
 
-        code = response.respond_to?(:code) ? response.code : response.status
-        unless (200..299).include?(code.to_i)
-          raise ConnectionError, "Connection failed with status: #{code}"
-        end
+        # response = begin
+        #   connection.post("#{configuration.path}/select", query_builder.request_string)
+        # rescue Faraday::ClientError => e
+        #   raise ConnectionError, e.message
+        # end
 
-        body = response.body
+        # code = response.respond_to?(:code) ? response.code : response.status
+        # unless (200..299).include?(code.to_i)
+        #   raise ConnectionError, "Connection failed with status: #{code}"
+        # end
 
-        # We get UTF-8 from Solr back, make sure the string knows about it
-        # when running on Ruby >= 1.9
-        if body.respond_to?(:force_encoding)
-          body.force_encoding("UTF-8")
-        end
+        # body = response.body
+
+        # # We get UTF-8 from Solr back, make sure the string knows about it
+        # # when running on Ruby >= 1.9
+        # if body.respond_to?(:force_encoding)
+        #   body.force_encoding("UTF-8")
+        # end
 
       end
 
@@ -242,17 +243,6 @@ module DelSolr
       success?(rsp.body) or log_error(rsp.body)
     end
 
-    def setup_connection(&connection_block)
-      @connection_block = connection_block
-    end
-
-    # accessor to the connection instance
-    def connection
-      @connection ||= begin
-        Faraday.new(:url => "http://#{configuration.server}:#{configuration.port}", :timeout => configuration.timeout, &connection_block)
-      end
-    end
-
     # clears out the connection so a new one will be created
     def reset_connection!
       @connection = nil
@@ -265,10 +255,9 @@ module DelSolr
 
     private
 
-    def connection_block
-      @connection_block ||= lambda do |faraday|
-        faraday.adapter Faraday.default_adapter
-      end
+    def default_connection(options, &connection_block)
+      require 'delsolr/client/direct_connection'
+      DirectConnection.new(options, &connection_block)
     end
 
     def log_query_success(url, response, from_cache, query_time)
@@ -297,7 +286,7 @@ module DelSolr
 
     # helper for posting data to solr
     def post(buffer)
-      connection.post("#{configuration.path}/update", buffer, {'Content-type' => 'text/xml;charset=utf-8'})
+      connection.post("/update", buffer, {'Content-type' => 'text/xml;charset=utf-8'})
     end
 
     def success?(response_body)
