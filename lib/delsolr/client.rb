@@ -128,18 +128,44 @@ module DelSolr
     # which are unsupported by DelSolr.
     #
     # Returns a DelSolr::Client::Response instance
+    # TODO: Put back caching
     def query(request_handler, opts = {})
-
       raise "request_handler must be supplied" if request_handler.blank?
-
-      enable_caching = opts.delete(:enable_caching) && !@cache.nil?
-      ttl = opts.delete(:ttl) || 1.hours
 
       query_builder = DelSolr::Client::QueryBuilder.new(request_handler, opts)
 
+      collection = opts.fetch(:collection) { '' }
+
+      response = @connection.post("/select", query_builder.request_string,
+                                  :collection => collection)
+      body = response.body
+
+      DelSolr::Client::Response.new(body, query_builder,
+                                    :logger => logger,
+                                    :from_cache => false,
+                                    :shortcuts => @shortcuts)
+
+      # TODO: What do do here?
+      #url = "http://#{configuration.full_path}/select?#{query_builder.request_string}"
+      # if response && response.success?
+      #   log_query_success(url, response, from_cache, (from_cache ? cache_time : response.qtime))
+      # else
+      #   # The response from solr will already be logged, but we should also
+      #   # log the full url to make debugging easier
+      #   log_query_error(url)
+      # end
+    end
+
+    def cache_key(query_builder)
       # it's important that the QueryBuilder returns strings in a deterministic fashion
       # so that the cache keys will match for the same query.
-      cache_key = Digest::MD5.hexdigest(query_builder.request_string)
+      Digest::MD5.hexdigest(query_builder.request_string)
+    end
+
+    def cache(key, opts, &block)
+      enable_caching = opts.delete(:enable_caching) && !@cache.nil?
+      ttl = opts.delete(:ttl) || 1.hours
+
       from_cache = false
 
       # if we're caching, first try looking in the cache
@@ -150,40 +176,7 @@ module DelSolr
         cache_time = (Time.now - t1).to_i * 1000 # retrieval time from the cache in ms
       end
 
-      if body.blank? # cache miss (or wasn't enabled)
-        @connection.post("/select", query_builder.request_string)
-
-        # response = begin
-        #   connection.post("#{configuration.path}/select", query_builder.request_string)
-        # rescue Faraday::ClientError => e
-        #   raise ConnectionError, e.message
-        # end
-
-        # code = response.respond_to?(:code) ? response.code : response.status
-        # unless (200..299).include?(code.to_i)
-        #   raise ConnectionError, "Connection failed with status: #{code}"
-        # end
-
-        # body = response.body
-
-        # # We get UTF-8 from Solr back, make sure the string knows about it
-        # # when running on Ruby >= 1.9
-        # if body.respond_to?(:force_encoding)
-        #   body.force_encoding("UTF-8")
-        # end
-
-      end
-
-      response = DelSolr::Client::Response.new(body, query_builder, :logger => logger, :from_cache => from_cache, :shortcuts => @shortcuts)
-
-      url = "http://#{configuration.full_path}/select?#{query_builder.request_string}"
-      if response && response.success?
-        log_query_success(url, response, from_cache, (from_cache ? cache_time : response.qtime))
-      else
-        # The response from solr will already be logged, but we should also
-        # log the full url to make debugging easier
-        log_query_error(url)
-      end
+      block.call
 
       # Cache successful responses that don't come from the cache
       if response && response.success? && enable_caching && !from_cache
@@ -193,6 +186,8 @@ module DelSolr
 
       response
     end
+
+
 
     # Adds a document to the buffer to be posted to solr (NOTE: does not perform the actual post)
     #
@@ -295,7 +290,6 @@ module DelSolr
     end
 
     def log_error(response_body)
-      return unless logger
       logger.error(response_body)
     end
   end

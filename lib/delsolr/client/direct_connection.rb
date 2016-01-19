@@ -14,16 +14,18 @@ module DelSolr
         @connection_block = connection_block
       end
 
-      def post(path, params, opts = {})
+      def post(method, params, opts = {})
         response = begin
           opts = opts.dup.merge(:timeout => @timeout)
-          faraday.post("#{@path}/#{path}", params, opts)
+          query_path = File.join(@path, opts.fetch(:collection), method)
+          faraday.post(query_path, params, opts)
         rescue Faraday::ClientError => e
           raise ConnectionError, e.message
         end
 
         code = response.respond_to?(:code) ? response.code : response.status
         unless (200..299).include?(code.to_i)
+          binding.pry
           raise ConnectionError, "Connection failed with status: #{code}"
         end
 

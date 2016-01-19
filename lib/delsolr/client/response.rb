@@ -38,24 +38,24 @@ module DelSolr
       def success?
         !raw_response.nil?
       end
-      
+
       # Returns the total number of matches
       def total
         @total ||= raw_response['response']['numFound']
       end
-      
+
       # Returns true if there no results
       def blank?
         raw_response.blank? || total < 1
       end
-      
+
       alias_method :empty?, :blank?
-      
+
       # Returns true if this response was pulled from the cache
       def from_cache?
         @from_cache
       end
-      
+
       # Returns the offset that was given in the request
       def offset
         @offset ||= raw_response['response']['start']
@@ -70,12 +70,12 @@ module DelSolr
       def docs
         @docs ||= raw_response['response']['docs']
       end
-      
+
       # Helper for displaying a given field (first tries the highlight, then the stored value)
       def display_for(doc, field)
         highlights_for(doc['unique_id'], field) || doc[field]
       end
-      
+
       # Returns the highlights for a given id for a given field
       def highlights_for(unique_id, field)
         raw_response['highlighting'] ||= {}
@@ -112,7 +112,7 @@ module DelSolr
       def collation
         collation_with_correction['collation']
       end
-      
+
       # Returns the query time in ms
       def qtime
         @qtime ||= raw_response['responseHeader']['QTime'].to_i
@@ -127,22 +127,22 @@ module DelSolr
       def params
         @params ||= raw_response['responseHeader']['params']
       end
-      
+
       # Returns the entire facet hash
       def facets
         @facets ||= raw_response['facet_counts'] || {}
       end
-      
+
       # Returns the hash of all the facet_fields (ie: {'instock_b' => ['true', 123, 'false', 20]}
       def facet_fields
         @facet_fields ||= facets['facet_fields'] || {}
       end
-      
+
       # Returns all of the facet queries
       def facet_queries
         @facet_queries ||= facets['facet_queries'] || {}
       end
-      
+
       # Returns a hash of hashs rather than a hash of arrays (ie: {'instock_b' => {'true' => 123', 'false', => 20} })
       def facet_fields_by_hash
         @facet_fields_by_hash ||= begin
@@ -150,7 +150,7 @@ module DelSolr
           if facet_fields
             facet_fields.each do |field,value_and_counts|
               f[field] = {}
-              value_and_counts.each_with_index do |v, i|              
+              value_and_counts.each_with_index do |v, i|
                 if i % 2 == 0
                   f[field][v] = value_and_counts[i+1]
                 end
@@ -160,12 +160,12 @@ module DelSolr
           f
         end
       end
-      
+
       # Returns an array of value/counts for a given field (ie: ['true', 123, 'false', 20]
       def facet_field(field)
         facet_fields[field.to_s] || []
       end
-      
+
       # Returns the array of field values for the given field in the order they were returned from solr
       def facet_field_values(field)
         facet_field_values ||= {}
@@ -177,28 +177,28 @@ module DelSolr
           a
         end
       end
-      
+
       # Returns a hash of value/counts for a given field (ie: {'true' => 123, 'false' => 20}
       def facet_field_by_hash(field)
         facet_fields_by_hash[field.to_s]
       end
-      
+
       # Returns the count for the given field/value pair
       def facet_field_count(field, value)
         facet_fields_by_hash[field.to_s][value.to_s] if facet_fields_by_hash[field.to_s]
       end
-      
+
       # Returns the counts for a given facet_query_name
       def facet_query_count_by_key(facet_query_key)
         facet_queries[facet_query_key.to_s]
       end
       alias :facet_query_count_by_name :facet_query_count_by_key
-      
+
       # Returns the url sent to solr
       def request_url
         query_builder.request_string
       end
-      
+
     end
   end
 end

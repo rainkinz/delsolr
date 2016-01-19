@@ -15,6 +15,7 @@ Gem::Specification.new do |s|
   s.add_dependency "faraday", "~> 0.9.2"
   s.add_dependency("json")
 
+  s.add_development_dependency "dotenv"
   s.add_development_dependency "pry"
   s.add_development_dependency "rspec", "~> 3.4.0"
   s.add_development_dependency "webmock"
