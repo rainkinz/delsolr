@@ -15,4 +15,5 @@ require 'delsolr/extensions'
 module DelSolr
   autoload :Client, 'delsolr/client'
   autoload :Document, 'delsolr/document'
+  autoload :NullLogger, 'delsolr/null_logger'
 end

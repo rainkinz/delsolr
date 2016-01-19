@@ -129,6 +129,7 @@ module DelSolr
     #
     # Returns a DelSolr::Client::Response instance
     # TODO: Put back caching
+    # TODO: How is request_handler used these days?
     def query(request_handler, opts = {})
       raise "request_handler must be supplied" if request_handler.blank?
 
