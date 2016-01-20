@@ -22,8 +22,9 @@ module DelSolr
           collections = opts.fetch(:collections)
 
           node = @zk_info.node_for_collection(collections.first)
-
-          binding.pry
+          if node.nil?
+            raise ArgumentError, "No node found for collection: #{collections.first}"
+          end
 
           url = File.join(node, method)
 
