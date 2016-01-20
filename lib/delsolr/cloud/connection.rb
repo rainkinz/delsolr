@@ -19,7 +19,12 @@ module DelSolr
         response = begin
           opts = opts.dup.merge(:timeout => @timeout)
 
-          node = @zk_info.node_for_collection(opts.fetch(:collection))
+          collections = opts.fetch(:collections)
+
+          node = @zk_info.node_for_collection(collections.first)
+
+          binding.pry
+
           url = File.join(node, method)
 
           # TODO: Not that familiar with faraday. Is this the best idea?

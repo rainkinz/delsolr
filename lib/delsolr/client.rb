@@ -135,10 +135,15 @@ module DelSolr
 
       query_builder = DelSolr::Client::QueryBuilder.new(request_handler, opts)
 
-      collection = opts.fetch(:collection) { '' }
+      collections = opts[:collections] || Array(opts[:collection])
+
+      if collections.empty?
+        raise ArgumentError, "A :collection => 'name_of_collection' or :collections => [array_of_collection_names] is required"
+      end
+
 
       response = @connection.post("/select", query_builder.request_string,
-                                  :collection => collection)
+                                  :collections => collections)
       body = response.body
 
       DelSolr::Client::Response.new(body, query_builder,
