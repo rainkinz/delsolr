@@ -11,7 +11,7 @@ module DelSolr
       attr_accessor :query_name, :options
 
       # ops can basically be straight solr URL params, but it also supports some other formats
-      # of different params to give it more of a "ruby" feel (ie: :filters can be an array, hash, or string, 
+      # of different params to give it more of a "ruby" feel (ie: :filters can be an array, hash, or string,
       # but you can also just specify the fq params directly
       def initialize(query_name, opts = {})
         @query_name = query_name
@@ -73,7 +73,7 @@ module DelSolr
         if facets
           if facets.is_a?(Array)
             params << {:facet => true}
-            params += build_facets(facets)          
+            params += build_facets(facets)
           elsif facets.is_a?(Hash)
             params << {:facet => true}
             params += build_facet(facets)
@@ -88,6 +88,11 @@ module DelSolr
         if opts.delete(:highlight)
           params << {:hl => 'true'}
           params << {'hl.fl' => opts['hl.fl'] || opts[:fl] }
+        end
+
+        collections = opts.delete(:collections)
+        if collections
+          params << {:collection => collections.join(',') }
         end
 
         # just pass everything that's left to solr

@@ -25,7 +25,6 @@ module DelSolr
 
         code = response.respond_to?(:code) ? response.code : response.status
         unless (200..299).include?(code.to_i)
-          binding.pry
           raise ConnectionError, "Connection failed with status: #{code}"
         end
 

@@ -19,14 +19,16 @@ module DelSolr
         response = begin
           opts = opts.dup.merge(:timeout => @timeout)
 
-          collections = opts.fetch(:collections)
-
+          collections = opts.delete(:collections)
           node = @zk_info.node_for_collection(collections.first)
           if node.nil?
             raise ArgumentError, "No node found for collection: #{collections.first}"
           end
 
+
           url = File.join(node, method)
+
+          puts "#{url}?#{params}"
 
           # TODO: Not that familiar with faraday. Is this the best idea?
           Faraday.post(url, params, opts)
