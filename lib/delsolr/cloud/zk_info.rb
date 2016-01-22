@@ -29,6 +29,10 @@ module DelSolr
         end
       end
 
+      def active_collection_names
+        @active_collection_names
+      end
+
       def live_nodes
         @live_nodes.inject([]) {|memo, (k, v)| memo << k if v; memo }
       end
@@ -77,6 +81,7 @@ module DelSolr
           @collections.each do |name, state|
             @all_urls[name], @leader_urls[name] = available_urls(name, state)
           end
+          update_active_collections
         end
       end
 
@@ -100,6 +105,12 @@ module DelSolr
         end
       end
 
+      def update_active_collections
+        @active_collection_names = @collections.inject([]) {|a, (col, state)|
+          has_active_shard?(state) && a << col; a
+        }
+      end
+
       def collection_state_znode_path(collection_name)
         "/collections/#{collection_name}/state.json"
       end
@@ -110,6 +121,10 @@ module DelSolr
 
       def leader_node?(node)
         node['leader'] == 'true'
+      end
+
+      def has_active_shard?(node)
+        node['shards'].values.map{|s| s['state'] == 'active'}.any?
       end
 
       ##############

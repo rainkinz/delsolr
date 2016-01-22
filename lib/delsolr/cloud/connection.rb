@@ -15,6 +15,10 @@ module DelSolr
                               :logger => @logger)
       end
 
+      def xor(array1, array2)
+        array1 + array2 - (array1 & array2)
+      end
+
       def post(method, params, opts = {})
         response = begin
           opts = opts.dup.merge(:timeout => @timeout)
@@ -25,6 +29,10 @@ module DelSolr
             raise ArgumentError, "No node found for collection: #{collections.first}"
           end
 
+          missing_collections = collections - @zk_info.active_collection_names
+          unless missing_collections.empty?
+            raise ArgumentError, "Trying to search of non-existent collections #{missing_collections}"
+          end
 
           url = File.join(node, method)
 
