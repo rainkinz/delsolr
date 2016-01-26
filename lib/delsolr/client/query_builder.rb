@@ -42,7 +42,10 @@ module DelSolr
         opts[:suggestionCount] ||= opts[:suggestion_count]
         opts[:onlyMorePopular] ||= opts[:only_more_popular]
 
-        raise ":query or :q must be set" if opts[:q].nil? || opts[:q].empty?
+        # raise ":query or :q must be set" if opts[:q].nil? || opts[:q].empty?
+        if opts[:q].nil? || opts[:q].empty?
+          opts[:q] = "*:*"
+        end
 
         # clear out the "rubyish" versions, what's left will go straight to solr
         opts.delete(:query)
