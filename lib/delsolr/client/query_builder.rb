@@ -90,6 +90,13 @@ module DelSolr
           params << {'hl.fl' => opts['hl.fl'] || opts[:fl] }
         end
 
+        qfs = opts.delete(:qf)
+        if qfs
+          Array(qfs).each do |qf|
+            params << "qf=#{qf}"
+          end
+        end
+
         collections = opts.delete(:collections)
         if collections
           params << {:collection => collections.join(',') }
