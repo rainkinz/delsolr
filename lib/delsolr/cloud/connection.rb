@@ -11,19 +11,15 @@ module DelSolr
         port = options.fetch(:port) { 2181 }.to_i
         @timeout = options.fetch(:timeout) { "120" }
         @logger = options.fetch(:logger) { NullLogger.new }
-        @zk_info = ZKInfo.new(:server => server, :port => port,
-                              :logger => @logger)
-      end
-
-      def xor(array1, array2)
-        array1 + array2 - (array1 & array2)
+        @zk_info = options.fetch(:zk_info) {
+          ZKInfo.new(:server => server, :port => port, :logger => @logger)
+        }
       end
 
       def post(method, params, opts = {})
         response = begin
-          opts = opts.dup.merge(:timeout => @timeout)
 
-          collections = opts.delete(:collections)
+          collections = collections(opts)
           node = @zk_info.node_for_collection(collections.first)
           if node.nil?
             raise ArgumentError, "No node found for collection: #{collections.first}"
@@ -39,7 +35,7 @@ module DelSolr
           puts "#{url}?#{params}"
 
           # TODO: Not that familiar with faraday. Is this the best idea?
-          Faraday.post(url, params, opts)
+          Faraday.post(url, params, faraday_opts(opts))
         rescue Faraday::ClientError => e
           raise Client::ConnectionError, e.message
         end
@@ -58,6 +54,26 @@ module DelSolr
         end
 
         response
+      end
+
+      def faraday_opts(opts)
+        faraday_opts = {}
+        faraday_opts[:timeout] = opts.fetch(:timeout) { @timeout }
+        faraday_opts
+      end
+
+      def collections(opts)
+        collections = opts[:collections] || Array(opts[:collection])
+        if collections.empty?
+          raise ArgumentError, "A :collection => 'name_of_collection' or " +
+            ":collections => [array_of_collection_names] is required"
+        end
+        collections
+      end
+
+
+      def xor(array1, array2)
+        array1 + array2 - (array1 & array2)
       end
 
     end

@@ -17,7 +17,9 @@ module DelSolr
       def post(method, params, opts = {})
         response = begin
           opts = opts.dup.merge(:timeout => @timeout)
-          query_path = File.join(@path, opts.fetch(:collection), method)
+
+          # TODO: Test the URL creation better
+          query_path = File.join(@path, collection(opts), method)
           faraday.post(query_path, params, opts)
         rescue Faraday::ClientError => e
           raise ConnectionError, e.message
@@ -37,6 +39,10 @@ module DelSolr
         end
 
         response
+      end
+
+      def collection(opts)
+        opts.fetch(:collection) { '' }
       end
 
       def full_path
