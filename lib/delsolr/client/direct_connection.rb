@@ -20,7 +20,8 @@ module DelSolr
 
           # TODO: Test the URL creation better
           query_path = File.join(@path, collection(opts), method)
-          faraday.post(query_path, params, opts)
+
+          faraday.post(query_path, params)
         rescue Faraday::ClientError => e
           raise ConnectionError, e.message
         end
@@ -42,7 +43,11 @@ module DelSolr
       end
 
       def collection(opts)
-        opts.fetch(:collection) { '' }
+        if collections = opts.fetch(:collections)
+          Array(collections).first
+        else
+          opts.fetch(:collection) { '' }
+        end
       end
 
       def full_path
